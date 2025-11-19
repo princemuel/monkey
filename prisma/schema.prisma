@@ -1,7 +1,7 @@
 generator client {
   provider = "prisma-client"
   // Generate my Client and Project types
-  output   = "../app/generated/prisma"
+  output   = "../app/lib/database/prisma"
 }
 
 datasource db {

@@ -169,4 +169,5 @@ local
 *.pem
 styled-system
 prisma.rs
+**/database/prisma
 generated
