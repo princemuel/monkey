@@ -9,17 +9,27 @@ datasource db {
 }
 
 model Task {
-  id        String   @id @default(uuid())
-  text      String
-  completed Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  owner     User?    @relation(fields: [ownerId], references: [id])
-  ownerId   String?
+  id         String   @id @default(uuid())
+  text       String
+  completed  Boolean  @default(false)
+  position   Int      @unique
+  created_at DateTime @default(now())
+
+  owner_id String?
+  owner    User?   @relation(fields: [owner_id], references: [id], onDelete: Cascade)
+
+  // Index for fast queries by owner and position
+  @@index([owner_id, position], name: "idx_tasks_user_position")
+  @@map("tasks")
 }
 
 model User {
-  id    String @id @default(uuid())
-  email String @unique
+  id         String   @id @default(uuid())
+  email      String   @unique
+  password   String
+  created_at DateTime @default(now())
+
   tasks Task[]
+
+  @@map("users")
 }
