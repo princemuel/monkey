@@ -1,27 +1,70 @@
 import {
+	data,
 	isRouteErrorResponse,
 	Links,
+	type LinksFunction,
 	Meta,
 	Outlet,
 	Scripts,
 	ScrollRestoration,
+	useRouteLoaderData,
 } from "react-router";
+import {
+	PreventFlashOnWrongTheme,
+	Theme,
+	ThemeProvider,
+	useTheme,
+} from "remix-themes";
 
 import "@fontsource-variable/josefin-sans";
-import "./global.css";
 
 import type { Route } from "./+types/root";
+import "./global.css";
+import { themeSessionResolver } from "./sessions.server";
+
+export const links: LinksFunction = () => {
+	return [{ rel: "icon", type: "image/png", href: "/favicon.png" }];
+};
+
+export async function loader({ request }: Route.LoaderArgs) {
+	const { setTheme, getTheme, commit } = await themeSessionResolver(request);
+
+	const theme = getTheme() ?? Theme.LIGHT;
+	setTheme(theme);
+
+	return data(
+		{ theme: getTheme() },
+		{ headers: { "Set-Cookie": await commit() } },
+	);
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
+	const data = useRouteLoaderData("root");
 	return (
-		<html lang="en">
+		<ThemeProvider specifiedTheme={data.theme} themeAction="/actions/set-theme">
+			<Root ssrTheme={Boolean(data.theme)}> {children}</Root>
+		</ThemeProvider>
+	);
+}
+
+function Root({
+	ssrTheme,
+	children,
+}: {
+	ssrTheme: boolean;
+	children: React.ReactNode;
+}) {
+	const [theme] = useTheme();
+	return (
+		<html lang="en" className={theme ?? ""}>
 			<head>
 				<meta charSet="utf-8" />
 				<meta name="viewport" content="width=device-width, initial-scale=1" />
+				<PreventFlashOnWrongTheme ssrTheme={ssrTheme} />
 				<Meta />
 				<Links />
 			</head>
-			<body>
+			<body className="relative bg-white flex w-full flex-col font-sans min-h-svh text-lg">
 				{children}
 				<ScrollRestoration />
 				<Scripts />
