@@ -39,7 +39,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
-	const data = useRouteLoaderData("root");
+	const data = useRouteLoaderData("root") as Route.ComponentProps["loaderData"];
 	return (
 		<ThemeProvider specifiedTheme={data.theme} themeAction="/actions/set-theme">
 			<Root ssrTheme={Boolean(data.theme)}> {children}</Root>
@@ -64,7 +64,7 @@ function Root({
 				<Meta />
 				<Links />
 			</head>
-			<body className="relative bg-white flex w-full flex-col font-sans min-h-svh text-lg">
+			<body className="relative grid min-h-svh grid-rows-[auto_1fr_auto] dark:bg-grey-950 bg-grey-50 w-full flex-col font-sans text-base md:text-lg">
 				{children}
 				<ScrollRestoration />
 				<Scripts />
