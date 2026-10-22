@@ -15,7 +15,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@dotenvx/dotenvx": "^1.51.1",
+    "@dotenvx/dotenvx": "^2.0.0",
     "@prisma/adapter-libsql": "^7.0.0",
     "@prisma/client": "^7.0.0",
     "@react-router/node": "^7.9.6",
