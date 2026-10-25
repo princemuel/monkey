@@ -1,114 +1,65 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# ────────────────────────────────────────────────
+# Go
+# ────────────────────────────────────────────────
 
-# Diagnostic reports (https://nodejs.org/api/report.html)
-report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+/monkey
+/monk
 
-# Runtime data
-pids
-*.pid
-*.pid.lock
-*.seed
+# Binaries, libraries, and test binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
 
-# Dependency directories
-node_modules/
-bower_components/
-jspm_packages/
-.npm
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
-!.yarn/cache
+# Output of `go test -c` / `go build -o bin/...`
+/bin/
+/dist/
 
-# TypeScript cache
-*.tsbuildinfo
-typings/
+# Coverage and profiling output
+*.out
+*.prof
+coverage.txt
+coverage.html
 
-# Output / build artifacts
-dist
-dist-ssr
-dev-dist
-tmp
-tmp-*
-/out-tsc
-/out/
-.build
-/output
-/build
-/.next
-.next
-.nuxt
-/.svelte-kit
-.vuepress/dist
-.serverless/
-.fusebox/
-.dynamodb/
-.nx/cache
-.nx/workspace-data
-.react-router
+# Workspace files (local-only; not needed for a single-module project)
+go.work
+go.work.sum
 
-# Coverage
-coverage
-*.lcov
-.nyc_output
-.grunt
-lib-cov
+# Vendored dependencies (uncomment if you don't want to commit them)
+# vendor/
 
-# Parcel / Vite / Misc cache
-.cache
-/.sass-cache
-vite.config.js.timestamp-*
-vite.config.ts.timestamp-*
-.rpt2_cache/
-.rts2_cache_cjs/
-.rts2_cache_es/
-.rts2_cache_umd/
+# ────────────────────────────────────────────────
+# Env / secrets
+# ────────────────────────────────────────────────
 
-# dotenv environment variables file
-# Env
 .env
 .env.*
 !.env.example
-!.env.sample
-!.env.test
+*.pem
 
-# REPL / npm pack output
-.node_repl_history
-*.tgz
+# ────────────────────────────────────────────────
+# Logs / temp
+# ────────────────────────────────────────────────
 
-# Yarn Integrity
-.yarn-integrity
+logs/
+*.log
+tmp/
+.cache/
 
-# Lint caches
-.eslintcache
-
+# ────────────────────────────────────────────────
 # IDEs and editors
+# ────────────────────────────────────────────────
+
 .idea/
-.project
-.classpath
-.c9/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-*.launch
-.settings/
+*.swp
+*.swo
+*~
 *.sublime-workspace
 
-# IDE - VSCode
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
@@ -116,58 +67,8 @@ vite.config.ts.timestamp-*
 !.vscode/extensions.json
 
 # ────────────────────────────────────────────────
-# Framework / Hosting
-# ────────────────────────────────────────────────
-
-# Next.js
-next-env.d.ts
-
-# Netlify / Vercel / Cloudflare
-.netlify
-.vercel
-.wrangler
-
-# Gatsby
-.cache/
-
-# Serverless
-.serverless/
-
-# ────────────────────────────────────────────────
-# Rust / Cargo
-# ────────────────────────────────────────────────
-
-target
-Cargo.lock
-*.node
-
-# ────────────────────────────────────────────────
-# Design / Assets
-# ────────────────────────────────────────────────
-
-*.sketch
-*.fig
-*.xd
-
-# ────────────────────────────────────────────────
-# System / OS Files
+# System / OS files
 # ────────────────────────────────────────────────
 
 .DS_Store
 Thumbs.db
-
-# ────────────────────────────────────────────────
-# Miscellaneous
-# ────────────────────────────────────────────────
-
-/connect.lock
-/libpeerconnection.log
-testem.log
-ignored
-local
-*.ignored.*
-*.pem
-styled-system
-prisma.rs
-**/database/prisma
-generated
