@@ -2,136 +2,138 @@ package lexer
 
 import "monkey/token"
 
+// what the lexer "sees" once it runs off the end of the input.
+const eof byte = 0
+
+// this maps characters that always form a one-character token.
+var singleCharTokens = [256]token.TokenKind{
+	'+': token.PLUS,
+	'-': token.MINUS,
+	'*': token.ASTERISK,
+	'/': token.SLASH,
+	'<': token.LT,
+	'>': token.GT,
+	',': token.COMMA,
+	';': token.SEMICOLON,
+	'(': token.LPAREN,
+	')': token.RPAREN,
+	'{': token.LBRACE,
+	'}': token.RBRACE,
+}
+
 type Lexer struct {
-	input        string
-	position     int  // current position in input (points to current char)
-	readPosition int  // current reading position in input (after current char)
-	ch           byte // current char under examination
+	input   string
+	pos     int  // index of ch in input
+	nextPos int  // index of the byte after ch
+	ch      byte // byte under examination (eof when exhausted)
 }
 
 func New(input string) *Lexer {
 	l := &Lexer{input: input}
-	l.readChar()
+	l.advance() // prime ch with the first byte
 	return l
 }
 
+// NextToken returns the next token and leaves the lexer on the first
+// byte after it. Every scanning helper below keeps that invariant.
 func (l *Lexer) NextToken() token.Token {
-	var tok token.Token
-
 	l.skipWhitespace()
 
-	switch l.ch {
-	case '+':
-		tok = newToken(token.PLUS, l.ch)
-	case '-':
-		tok = newToken(token.MINUS, l.ch)
-	case '/':
-		tok = newToken(token.SLASH, l.ch)
-	case '*':
-		tok = newToken(token.ASTERISK, l.ch)
-	case '=':
-		if l.peekChar() == '=' {
-			ch := l.ch
-			l.readChar()
-			literal := string(ch) + string(ch)
-			tok = token.Token{Type: token.EQ, Literal: literal}
-		} else {
-			tok = newToken(token.ASSIGN, l.ch)
-		}
-	case '!':
-		if l.peekChar() == '=' {
-			ch := l.ch
-			l.readChar()
-			literal := string(ch) + string(l.ch)
-			tok = token.Token{Type: token.NOT_EQ, Literal: literal}
-		} else {
-			tok = newToken(token.BANG, l.ch)
-		}
-
-	case '<':
-		tok = newToken(token.LT, l.ch)
-	case '>':
-		tok = newToken(token.GT, l.ch)
-	case ';':
-		tok = newToken(token.SEMICOLON, l.ch)
-	case ',':
-		tok = newToken(token.COMMA, l.ch)
-	case '(':
-		tok = newToken(token.LPAREN, l.ch)
-	case ')':
-		tok = newToken(token.RPAREN, l.ch)
-	case '{':
-		tok = newToken(token.LBRACE, l.ch)
-	case '}':
-		tok = newToken(token.RBRACE, l.ch)
-	case 0:
-		tok.Literal = ""
-		tok.Type = token.EOF
-	default:
-		if isLetter(l.ch) {
-			tok.Literal = l.readIdent()
-			tok.Type = token.LookupIdent(tok.Literal)
-			return tok
-		} else if isDigit(l.ch) {
-			tok.Type = token.INT
-			tok.Literal = l.readNumber()
-			return tok
-		} else {
-			tok = newToken(token.ILLEGAL, l.ch)
-		}
+	switch {
+	case l.ch == eof:
+		return token.Token{Kind: token.EOF}
+	case isAsciiAlphabet(l.ch):
+		return l.scanIdentifier()
+	case isAsciiDigit(l.ch):
+		return l.scanNumber()
+	case l.ch == '=':
+		return l.scanOneOrTwoChar('=', token.EQ, token.ASSIGN)
+	case l.ch == '!':
+		return l.scanOneOrTwoChar('=', token.NOT_EQ, token.BANG)
 	}
 
-	l.readChar()
+	kind := singleCharTokens[l.ch]
+	if kind == "" {
+		kind = token.ILLEGAL
+	}
+	return l.consumeChar(kind)
+}
+
+func (l *Lexer) scanIdentifier() token.Token {
+	literal := l.readWhile(isAsciiAlphabet)
+	return token.Token{Kind: token.LookupIdent(literal), Literal: literal}
+}
+
+func (l *Lexer) scanNumber() token.Token {
+	return token.Token{Kind: token.INT, Literal: l.readWhile(isAsciiDigit)}
+}
+
+// This handles operators like "=" vs "==" and "!" vs "!=".
+//
+// If the next byte is `second`, it emits the two-char token (pairKind), otherwise it emits the one-char token (singleKind).
+func (l *Lexer) scanOneOrTwoChar(second byte, pairKind, singleKind token.TokenKind) token.Token {
+	if l.peek() != second {
+		return l.consumeChar(singleKind)
+	}
+
+	start := l.pos
+	l.advanceBy(2)
+	return token.Token{Kind: pairKind, Literal: l.input[start:l.pos]}
+}
+
+// consumeChar emits the current byte as a token of the given kind.
+func (l *Lexer) consumeChar(kind token.TokenKind) token.Token {
+	tok := token.Token{Kind: kind, Literal: string(l.ch)}
+	l.advance()
 	return tok
 }
 
-func (l *Lexer) peekChar() byte {
-	if l.readPosition >= len(l.input) {
-		return 0
+// advanceBy moves the cursor forward n bytes.
+func (l *Lexer) advanceBy(n int) {
+	// Go 1.22+; use `for i := 0; i < n; i++` on older versions
+	for range n {
+		l.advance()
 	}
-	return l.input[l.readPosition]
 }
 
-func (l *Lexer) readChar() {
-	if l.readPosition >= len(l.input) {
-		l.ch = 0
-	} else {
-		l.ch = l.input[l.readPosition]
-	}
-	l.position = l.readPosition
-	l.readPosition += 1
+// advance moves the cursor forward by 1 byte.
+func (l *Lexer) advance() {
+	l.ch = l.peek()
+	l.pos = l.nextPos
+	l.nextPos++
 }
 
-func (l *Lexer) readIdent() string {
-	position := l.position
-	for isLetter(l.ch) {
-		l.readChar()
+// peek looks at the next byte without consuming it.
+func (l *Lexer) peek() byte {
+	if l.nextPos >= len(l.input) {
+		return eof
 	}
-	return l.input[position:l.position]
+	return l.input[l.nextPos]
 }
 
-func (l *Lexer) readNumber() string {
-	position := l.position
-	for isDigit(l.ch) {
-		l.readChar()
+// readWhile consumes bytes while the predicate holds, and returns what it consumed.
+func (l *Lexer) readWhile(predicate func(byte) bool) string {
+	start := l.pos
+	for predicate(l.ch) {
+		l.advance()
 	}
-	return l.input[position:l.position]
+	return l.input[start:l.pos]
 }
 
 func (l *Lexer) skipWhitespace() {
-	for l.ch == ' ' || l.ch == '\t' || l.ch == '\n' || l.ch == '\r' {
-		l.readChar()
+	for isAsciiWhitespace(l.ch) {
+		l.advance()
 	}
 }
 
-func newToken(tokenType token.TokenType, ch byte) token.Token {
-	return token.Token{Type: tokenType, Literal: string(ch)}
+func isAsciiWhitespace(ch byte) bool {
+	return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
 }
 
-func isDigit(ch byte) bool {
+func isAsciiDigit(ch byte) bool {
 	return '0' <= ch && ch <= '9'
 }
 
-func isLetter(ch byte) bool {
+func isAsciiAlphabet(ch byte) bool {
 	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
 }

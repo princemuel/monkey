@@ -1,54 +1,54 @@
 package token
 
-type TokenType string
+type TokenKind string
 
 const (
-	ILLEGAL = "ILLEGAL"
-	EOF     = "EOF"
+	ILLEGAL TokenKind = "ILLEGAL"
+	EOF     TokenKind = "EOF"
 
 	// Identifiers + literals
-	IDENT = "IDENT" // add, foobar, x, y, ...
-	INT   = "INT"   // 1343456
+	IDENT TokenKind = "IDENT" // add, foobar, x, y, ...
+	INT   TokenKind = "INT"   // 1343456
 
 	// Operators
-	ASSIGN   = "="
-	PLUS     = "+"
-	MINUS    = "-"
-	BANG     = "!"
-	ASTERISK = "*"
-	SLASH    = "/"
+	ASSIGN   TokenKind = "="
+	PLUS     TokenKind = "+"
+	MINUS    TokenKind = "-"
+	BANG     TokenKind = "!"
+	ASTERISK TokenKind = "*"
+	SLASH    TokenKind = "/"
 
-	LT = "<"
-	GT = ">"
+	LT TokenKind = "<"
+	GT TokenKind = ">"
 
-	EQ     = "=="
-	NOT_EQ = "!="
+	EQ     TokenKind = "=="
+	NOT_EQ TokenKind = "!="
 
 	// Delimiters
-	COMMA     = ","
-	SEMICOLON = ";"
+	COMMA     TokenKind = ","
+	SEMICOLON TokenKind = ";"
 
-	LPAREN = "("
-	RPAREN = ")"
-	LBRACE = "{"
-	RBRACE = "}"
+	LPAREN TokenKind = "("
+	RPAREN TokenKind = ")"
+	LBRACE TokenKind = "{"
+	RBRACE TokenKind = "}"
 
 	// Keywords
-	FUNCTION = "FUNCTION"
-	LET      = "LET"
-	TRUE     = "TRUE"
-	FALSE    = "FALSE"
-	IF       = "IF"
-	ELSE     = "ELSE"
-	RETURN   = "RETURN"
+	FUNCTION TokenKind = "FUNCTION"
+	LET      TokenKind = "LET"
+	TRUE     TokenKind = "TRUE"
+	FALSE    TokenKind = "FALSE"
+	IF       TokenKind = "IF"
+	ELSE     TokenKind = "ELSE"
+	RETURN   TokenKind = "RETURN"
 )
 
 type Token struct {
-	Type    TokenType
+	Kind    TokenKind
 	Literal string
 }
 
-var keywords = map[string]TokenType{
+var keywords = map[string]TokenKind{
 	"fn":     FUNCTION,
 	"let":    LET,
 	"true":   TRUE,
@@ -58,9 +58,10 @@ var keywords = map[string]TokenType{
 	"return": RETURN,
 }
 
-func LookupIdent(ident string) TokenType {
-	if tok, ok := keywords[ident]; ok {
-		return tok
+// LookupIdent returns the keyword kind for ident, or IDENT if it isn't a keyword.
+func LookupIdent(ident string) TokenKind {
+	if kind, ok := keywords[ident]; ok {
+		return kind
 	}
 	return IDENT
 }

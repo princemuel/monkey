@@ -29,7 +29,7 @@ if (5 < 10) {
 `
 
 	tests := []struct {
-		expectedType    token.TokenType
+		expectedType    token.TokenKind
 		expectedLiteral string
 	}{
 		{token.LET, "let"},
@@ -113,9 +113,9 @@ if (5 < 10) {
 	for i, tt := range tests {
 		tok := l.NextToken()
 
-		if tok.Type != tt.expectedType {
+		if tok.Kind != tt.expectedType {
 			t.Fatalf("tests[%d] - tokentype wrong. expected=%q, got=%q",
-				i, tt.expectedType, tok.Type)
+				i, tt.expectedType, tok.Kind)
 		}
 
 		if tok.Literal != tt.expectedLiteral {
