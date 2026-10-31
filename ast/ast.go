@@ -41,7 +41,7 @@ func (p *Program) TokenLiteral() string {
 // LetStatement is `let <ident> = <value>;`.
 type LetStatement struct {
 	Token token.Token // the LET token
-	Ident *Identifier
+	Name  *Identifier
 	Value Expression
 }
 
@@ -49,10 +49,10 @@ func (*LetStatement) isStatement() {}
 
 func (ls *LetStatement) TokenLiteral() string { return ls.Token.Literal }
 
-// Identifier is a name, such as `x` or `add`.
+// Identifier is a ident, such as `x` or `add`.
 type Identifier struct {
 	Token token.Token // the IDENT token
-	Name  string
+	Value string
 }
 
 func (*Identifier) isExpression() {}
