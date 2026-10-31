@@ -1,4 +1,7 @@
-BINARY := monkey
+
+BINARY  := monkey
+BIN_DIR := bin
+CMD     := ./cmd/monkey
 
 .DEFAULT_GOAL := build
 
@@ -13,17 +16,16 @@ vet: fmt
 test: vet
 	go test ./...
 
-# Needs a main.go in the project root (arrives with the REPL chapter).
+# Entry point lives in cmd/monkey; the binary lands in bin/ (gitignored).
 build: vet
-	go build -o $(BINARY) .
+	go build -o $(BIN_DIR)/$(BINARY) $(CMD)
 
 run: build
-	./$(BINARY)
+	./$(BIN_DIR)/$(BINARY)
 
 # Smaller release binary: -s drops the symbol table, -w drops DWARF debug info.
 strip: vet
-	go build -trimpath -ldflags="-s -w" -o $(BINARY) .
+	go build -trimpath -ldflags="-s -w" -o $(BIN_DIR)/$(BINARY) $(CMD)
 
 clean:
-	go clean
-	rm -f $(BINARY)
+	rm -rf $(BIN_DIR)
