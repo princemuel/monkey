@@ -49,6 +49,15 @@ func (*LetStatement) isStatement() {}
 
 func (ls *LetStatement) TokenLiteral() string { return ls.Token.Literal }
 
+type ReturnStatement struct {
+	Token       token.Token // the RETURN token
+	ReturnValue Expression
+}
+
+func (*ReturnStatement) isStatement() {}
+
+func (rs *ReturnStatement) TokenLiteral() string { return rs.Token.Literal }
+
 // Identifier is a ident, such as `x` or `add`.
 type Identifier struct {
 	Token token.Token // the IDENT token
@@ -63,7 +72,7 @@ func (id *Identifier) TokenLiteral() string { return id.Token.Literal }
 var (
 	_ Node      = (*Program)(nil)
 	_ Statement = (*LetStatement)(nil)
-	// _ Statement  = (*ReturnStatement)(nil)
+	_ Statement = (*ReturnStatement)(nil)
 	// _ Statement  = (*ExpressionStatement)(nil)
 	_ Expression = (*Identifier)(nil)
 	// _ Expression = (*IntegerLiteral)(nil)
