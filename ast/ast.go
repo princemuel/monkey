@@ -1,11 +1,15 @@
 package ast
 
-import "monkey/token"
+import (
+	"bytes"
+	"monkey/token"
+)
 
 // Node is anything in the syntax tree.
 type Node interface {
 	// TokenLiteral returns the literal of the token this node was built from.
 	TokenLiteral() string
+	String() string
 }
 
 // Statement is a Node that performs an action without producing a value
@@ -38,6 +42,16 @@ func (p *Program) TokenLiteral() string {
 	return p.Statements[0].TokenLiteral()
 }
 
+func (p *Program) String() string {
+	var out bytes.Buffer
+
+	for _, s := range p.Statements {
+		out.WriteString(s.String())
+	}
+
+	return out.String()
+}
+
 // LetStatement is `let <ident> = <value>;`.
 type LetStatement struct {
 	Token token.Token // the LET token
@@ -49,6 +63,24 @@ func (*LetStatement) isStatement() {}
 
 func (ls *LetStatement) TokenLiteral() string { return ls.Token.Literal }
 
+func (ls *LetStatement) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(ls.TokenLiteral())
+	out.WriteString(" ")
+	out.WriteString(ls.Name.String())
+	out.WriteString(" = ")
+
+	if ls.Value != nil {
+		out.WriteString(ls.Value.String())
+	}
+
+	out.WriteString(";")
+
+	return out.String()
+
+}
+
 type ReturnStatement struct {
 	Token       token.Token // the RETURN token
 	ReturnValue Expression
@@ -56,7 +88,39 @@ type ReturnStatement struct {
 
 func (*ReturnStatement) isStatement() {}
 
-func (rs *ReturnStatement) TokenLiteral() string { return rs.Token.Literal }
+func (es *ReturnStatement) TokenLiteral() string { return es.Token.Literal }
+
+func (es *ReturnStatement) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(es.TokenLiteral())
+	out.WriteString(" ")
+
+	if es.ReturnValue != nil {
+		out.WriteString(es.ReturnValue.String())
+	}
+
+	out.WriteString(";")
+
+	return out.String()
+
+}
+
+type ExpressionStatement struct {
+	Token      token.Token // the EXPRESSION token
+	Expression Expression
+}
+
+func (*ExpressionStatement) isStatement() {}
+
+func (es *ExpressionStatement) TokenLiteral() string { return es.Token.Literal }
+
+func (es *ExpressionStatement) String() string {
+	if es.Expression == nil {
+		return ""
+	}
+	return es.Expression.String()
+}
 
 // Identifier is a ident, such as `x` or `add`.
 type Identifier struct {
@@ -68,12 +132,14 @@ func (*Identifier) isExpression() {}
 
 func (id *Identifier) TokenLiteral() string { return id.Token.Literal }
 
+func (id *Identifier) String() string { return id.Value }
+
 // Compile-time checks that each type satisfies the interface it claims to.
 var (
-	_ Node      = (*Program)(nil)
-	_ Statement = (*LetStatement)(nil)
-	_ Statement = (*ReturnStatement)(nil)
-	// _ Statement  = (*ExpressionStatement)(nil)
+	_ Node       = (*Program)(nil)
+	_ Statement  = (*LetStatement)(nil)
+	_ Statement  = (*ReturnStatement)(nil)
+	_ Statement  = (*ExpressionStatement)(nil)
 	_ Expression = (*Identifier)(nil)
 	// _ Expression = (*IntegerLiteral)(nil)
 )
