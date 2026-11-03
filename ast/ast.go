@@ -3,11 +3,11 @@ package ast
 import (
 	"bytes"
 	"monkey/token"
+	"strings"
 )
 
-// Node is anything in the syntax tree.
+// The base Node interface. It means anything in the syntax tree.
 type Node interface {
-	// TokenLiteral returns the literal of the token this node was built from.
 	TokenLiteral() string
 	String() string
 }
@@ -15,24 +15,27 @@ type Node interface {
 // Statement is a Node that performs an action without producing a value
 // (let, return, ...).
 //
-// isStatement is a marker method: it has no behavior and exists only so the
+// # All statement nodes implement this
+//
+// StmtNode is a marker method: it has no behavior and exists only so the
 // compiler can tell statements from expressions.
-type Statement interface {
+type Stmt interface {
 	Node
-	isStatement()
+	StmtNode()
 }
 
 // Expression is a Node that produces a value (5, x, a + b, ...).
 //
-// isExpression is a marker method, like isStatement.
-type Expression interface {
+// # All expression nodes implement this
+//
+// ExprNode is a marker method, like StmtNode.
+type Expr interface {
 	Node
-	isExpression()
+	ExprNode()
 }
 
-// Program is the root of every AST: a sequence of top-level statements.
 type Program struct {
-	Statements []Statement
+	Statements []Stmt
 }
 
 func (p *Program) TokenLiteral() string {
@@ -52,18 +55,16 @@ func (p *Program) String() string {
 	return out.String()
 }
 
-// LetStatement is `let <ident> = <value>;`.
-type LetStatement struct {
+// LetStmt is `let <ident> = <value>;`.
+type LetStmt struct {
 	Token token.Token // the LET token
 	Name  *Identifier
-	Value Expression
+	Value Expr
 }
 
-func (*LetStatement) isStatement() {}
-
-func (ls *LetStatement) TokenLiteral() string { return ls.Token.Literal }
-
-func (ls *LetStatement) String() string {
+func (*LetStmt) StmtNode()               {}
+func (ls *LetStmt) TokenLiteral() string { return ls.Token.Literal }
+func (ls *LetStmt) String() string {
 	var out bytes.Buffer
 
 	out.WriteString(ls.TokenLiteral())
@@ -78,48 +79,59 @@ func (ls *LetStatement) String() string {
 	out.WriteString(";")
 
 	return out.String()
-
 }
 
 type ReturnStatement struct {
 	Token       token.Token // the RETURN token
-	ReturnValue Expression
+	ReturnValue Expr
 }
 
-func (*ReturnStatement) isStatement() {}
-
-func (es *ReturnStatement) TokenLiteral() string { return es.Token.Literal }
-
-func (es *ReturnStatement) String() string {
+func (*ReturnStatement) StmtNode()               {}
+func (rs *ReturnStatement) TokenLiteral() string { return rs.Token.Literal }
+func (rs *ReturnStatement) String() string {
 	var out bytes.Buffer
 
-	out.WriteString(es.TokenLiteral())
+	out.WriteString(rs.TokenLiteral())
 	out.WriteString(" ")
 
-	if es.ReturnValue != nil {
-		out.WriteString(es.ReturnValue.String())
+	if rs.ReturnValue != nil {
+		out.WriteString(rs.ReturnValue.String())
 	}
 
 	out.WriteString(";")
 
 	return out.String()
-
 }
 
 type ExpressionStatement struct {
-	Token      token.Token // the EXPRESSION token
-	Expression Expression
+	Token      token.Token // the first token of the expression
+	Expression Expr
 }
 
-func (*ExpressionStatement) isStatement() {}
-
+func (*ExpressionStatement) StmtNode()               {}
 func (es *ExpressionStatement) TokenLiteral() string { return es.Token.Literal }
-
 func (es *ExpressionStatement) String() string {
 	if es.Expression == nil {
 		return ""
 	}
 	return es.Expression.String()
+}
+
+type BlockStatement struct {
+	Token      token.Token // the { token
+	Statements []Stmt
+}
+
+func (*BlockStatement) StmtNode()               {}
+func (bs *BlockStatement) TokenLiteral() string { return bs.Token.Literal }
+func (bs *BlockStatement) String() string {
+	var out bytes.Buffer
+
+	for _, s := range bs.Statements {
+		out.WriteString(s.String())
+	}
+
+	return out.String()
 }
 
 // Identifier is a ident, such as `x` or `add`.
@@ -128,18 +140,168 @@ type Identifier struct {
 	Value string
 }
 
-func (*Identifier) isExpression() {}
+func (*Identifier) ExprNode()              {}
+func (i *Identifier) TokenLiteral() string { return i.Token.Literal }
+func (i *Identifier) String() string       { return i.Value }
 
-func (id *Identifier) TokenLiteral() string { return id.Token.Literal }
+type Boolean struct {
+	Token token.Token
+	Value bool
+}
 
-func (id *Identifier) String() string { return id.Value }
+func (*Boolean) ExprNode()              {}
+func (b *Boolean) TokenLiteral() string { return b.Token.Literal }
+func (b *Boolean) String() string       { return b.Token.Literal }
+
+type IntegerLiteral struct {
+	Token token.Token
+	Value int64
+}
+
+func (*IntegerLiteral) ExprNode()               {}
+func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }
+func (il *IntegerLiteral) String() string       { return il.Token.Literal }
+
+type PrefixExpression struct {
+	Token    token.Token // The prefix token, e.g. !
+	Operator string
+	Right    Expr
+}
+
+func (*PrefixExpression) ExprNode()               {}
+func (pe *PrefixExpression) TokenLiteral() string { return pe.Token.Literal }
+func (pe *PrefixExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("(")
+	out.WriteString(pe.Operator)
+	out.WriteString(pe.Right.String())
+	out.WriteString(")")
+
+	return out.String()
+}
+
+type InfixExpression struct {
+	Token    token.Token // The operator token, e.g. +
+	Left     Expr
+	Operator string
+	Right    Expr
+}
+
+func (*InfixExpression) ExprNode()               {}
+func (ie *InfixExpression) TokenLiteral() string { return ie.Token.Literal }
+func (ie *InfixExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("(")
+	out.WriteString(ie.Left.String())
+	out.WriteString(" ")
+	out.WriteString(ie.Operator)
+	out.WriteString(" ")
+	out.WriteString(ie.Right.String())
+	out.WriteString(")")
+
+	return out.String()
+}
+
+type IfExpression struct {
+	Token       token.Token // The 'if' token
+	Condition   Expr
+	Consequence *BlockStatement
+	Alternative *BlockStatement
+}
+
+func (*IfExpression) ExprNode()               {}
+func (ie *IfExpression) TokenLiteral() string { return ie.Token.Literal }
+func (ie *IfExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("if")
+	out.WriteString(ie.Condition.String())
+	out.WriteString(" ")
+	out.WriteString(ie.Consequence.String())
+
+	if ie.Alternative != nil {
+		out.WriteString("else ")
+		out.WriteString(ie.Alternative.String())
+	}
+
+	return out.String()
+}
+
+type FunctionLiteral struct {
+	Token      token.Token // The 'fn' token
+	Parameters []*Identifier
+	Body       *BlockStatement
+}
+
+func (*FunctionLiteral) ExprNode()               {}
+func (fl *FunctionLiteral) TokenLiteral() string { return fl.Token.Literal }
+func (fl *FunctionLiteral) String() string {
+	var out bytes.Buffer
+
+	params := []string{}
+	for _, p := range fl.Parameters {
+		params = append(params, p.String())
+	}
+
+	out.WriteString(fl.TokenLiteral())
+	out.WriteString("(")
+	out.WriteString(strings.Join(params, ", "))
+	out.WriteString(") ")
+	out.WriteString(fl.Body.String())
+
+	return out.String()
+}
+
+type CallExpression struct {
+	Token     token.Token // The '(' token
+	Function  Expr        // Identifier or FunctionLiteral
+	Arguments []Expr
+}
+
+func (*CallExpression) ExprNode()               {}
+func (ce *CallExpression) TokenLiteral() string { return ce.Token.Literal }
+func (ce *CallExpression) String() string {
+	var out bytes.Buffer
+
+	args := []string{}
+	for _, a := range ce.Arguments {
+		args = append(args, a.String())
+	}
+
+	out.WriteString(ce.Function.String())
+	out.WriteString("(")
+	out.WriteString(strings.Join(args, ", "))
+	out.WriteString(")")
+
+	return out.String()
+}
 
 // Compile-time checks that each type satisfies the interface it claims to.
 var (
-	_ Node       = (*Program)(nil)
-	_ Statement  = (*LetStatement)(nil)
-	_ Statement  = (*ReturnStatement)(nil)
-	_ Statement  = (*ExpressionStatement)(nil)
-	_ Expression = (*Identifier)(nil)
-	// _ Expression = (*IntegerLiteral)(nil)
+	// Root Node
+	_ Node = (*Program)(nil)
+
+	// Statements
+	_ Stmt = (*LetStmt)(nil)
+	_ Stmt = (*ReturnStatement)(nil)
+	_ Stmt = (*ExpressionStatement)(nil)
+	_ Stmt = (*BlockStatement)(nil)
+
+	// Expressions - Identifiers & Literals
+	_ Expr = (*Identifier)(nil)
+	_ Expr = (*IntegerLiteral)(nil)
+	_ Expr = (*Boolean)(nil)
+	// _ Expr = (*StringLiteral)(nil)
+	// _ Expr = (*ArrayLiteral)(nil)
+	// _ Expr = (*HashLiteral)(nil)
+
+	// Expressions - Operators & Control Flow
+	_ Expr = (*PrefixExpression)(nil)
+	_ Expr = (*InfixExpression)(nil)
+	_ Expr = (*IfExpression)(nil)
+	_ Expr = (*FunctionLiteral)(nil)
+	_ Expr = (*CallExpression)(nil)
+	// _ Expr = (*IndexExpression)(nil)
 )
