@@ -1,9 +1,8 @@
 package lexer
 
 import (
-	"testing"
-
 	"monkey/token"
+	"testing"
 )
 
 func TestNextToken(t *testing.T) {
@@ -29,7 +28,7 @@ if (5 < 10) {
 `
 
 	tests := []struct {
-		expectedType    token.TokenKind
+		expectedKind    token.TokenKind
 		expectedLiteral string
 	}{
 		{token.LET, "let"},
@@ -113,9 +112,9 @@ if (5 < 10) {
 	for i, tt := range tests {
 		tok := l.NextToken()
 
-		if tok.Kind != tt.expectedType {
+		if tok.Kind != tt.expectedKind {
 			t.Fatalf("tests[%d] - tokentype wrong. expected=%q, got=%q",
-				i, tt.expectedType, tok.Kind)
+				i, tt.expectedKind, tok.Kind)
 		}
 
 		if tok.Literal != tt.expectedLiteral {
